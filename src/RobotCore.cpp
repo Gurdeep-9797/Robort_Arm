@@ -1,5 +1,35 @@
 #include "RobotCore.h"
+#include <Wire.h>
 
+// ============================================================================
+// 🛠️ USER CONFIGURATION: MOTOR & PCA9685 SETTINGS
+// ============================================================================
+// Change these values if you swap motors or need to tune limits.
+
+// PCA9685 Driver Settings
+#define PCA9685_ADDRESS     0x40    // Default I2C Address
+#define PCA9685_FREQ        50      // 50Hz is standard for analog/digital servos
+
+// MOTOR CALIBRATION (Pulse Widths)
+// These "ticks" correspond to the PWM pulse length (0 - 4096)
+// Standard MG996R 360° Positional usually works with 0.5ms to 2.5ms.
+// 0.5ms = ~102 ticks
+// 2.5ms = ~512 ticks
+#define PULSE_MIN_TICKS     102     // Pulse for the motor's "0" position
+#define PULSE_MAX_TICKS     512     // Pulse for the motor's "Max" position
+
+// INPUT MAPPING (Logic to Reality)
+// The Robot Logic (IK) thinks in angles (e.g., -180° to +180°).
+// Your Motor thinks in 0-360°. We map the Input (Logic) to the Output (Pulse).
+// If your joint goes from -180 to 180, we map that to the motor's full range.
+#define INPUT_ANGLE_MIN     -180.0  // Minimum angle the code will send
+#define INPUT_ANGLE_MAX     180.0   // Maximum angle the code will send
+
+// ============================================================================
+// LOGIC IMPLEMENTATION (DO NOT CHANGE BELOW UNLESS EXPERT)
+// ============================================================================
+
+// --- PlaneMath (Geometry) ---
 bool PlaneMath::planeFrom3Points(const float p1[3], const float p2[3], const float p3[3], float origin[3], float normal[3]) {
     float v1[3] = {p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]};
     float v2[3] = {p3[0] - p1[0], p3[1] - p1[1], p3[2] - p1[2]};
@@ -33,6 +63,7 @@ float PlaneMath::distanceToPlane(const float origin[3], const float normal[3], c
     return (point[0] - origin[0]) * normal[0] + (point[1] - origin[1]) * normal[1] + (point[2] - origin[2]) * normal[2];
 }
 
+// --- RobotConfig (Settings) ---
 RobotConfig& RobotConfig::getInstance() {
     static RobotConfig instance;
     return instance;
@@ -150,48 +181,29 @@ bool RobotConfig::loadFromNVS() {
     return true;
 }
 
+// --- ServoController (UPDATED FOR PCA9685 & CUSTOM MOTORS) ---
 ServoController& ServoController::getInstance() {
     static ServoController instance;
     return instance;
 }
 
-ServoController::ServoController() {
-    pins_[0] = 25;
-    pins_[1] = 26;
-    pins_[2] = 27;
-    pins_[3] = 14;
-    pins_[4] = 12;
-    pins_[5] = 13;
-    
-    for (int i = 0; i < NUM_JOINTS; i++) {
-        enabled_[i] = false;
-    }
-}
-
-// ... existing includes ...
-
-ServoController& ServoController::getInstance() {
-    static ServoController instance;
-    return instance;
-}
-
-ServoController::ServoController() : pwm_(Adafruit_PWMServoDriver(0x40)) { // 0x40 is default address
+ServoController::ServoController() : pwm_(Adafruit_PWMServoDriver(PCA9685_ADDRESS)) {
     for (int i = 0; i < NUM_JOINTS; i++) {
         enabled_[i] = false;
     }
 }
 
 bool ServoController::begin() {
-    Wire.begin(21, 22); // Initialize I2C on SDA=21, SCL=22
+    Wire.begin(21, 22); // Start I2C on SDA=21, SCL=22
     pwm_.begin();
     pwm_.setOscillatorFrequency(27000000);
-    pwm_.setPWMFreq(50); // Analog servos run at ~50 Hz updates
+    pwm_.setPWMFreq(PCA9685_FREQ); 
 
     delay(10);
     
-    // Set initial positions
+    // Set initial positions (Home to 0)
     for (int i = 0; i < NUM_JOINTS; i++) {
-        writePosition(i, 0); // Initialize to 0 degrees
+        writePosition(i, 0); 
         enabled_[i] = true;
     }
     return true;
@@ -200,23 +212,17 @@ bool ServoController::begin() {
 void ServoController::writePosition(uint8_t joint, float angle) {
     if (joint >= NUM_JOINTS || !enabled_[joint]) return;
     
-    JointLimits limits = RobotConfig::getInstance().getJointLimits(joint);
+    // 1. Constrain Input Angle to Safe Logic Limits
+    float safe_angle = angle;
+    if (safe_angle < INPUT_ANGLE_MIN) safe_angle = INPUT_ANGLE_MIN;
+    if (safe_angle > INPUT_ANGLE_MAX) safe_angle = INPUT_ANGLE_MAX;
+
+    // 2. Map Logic Angle to Motor Pulse
+    // Example: Maps -180° input to 102 ticks (0.5ms)
+    //          Maps +180° input to 512 ticks (2.5ms)
+    int pulselength = map(safe_angle, INPUT_ANGLE_MIN, INPUT_ANGLE_MAX, PULSE_MIN_TICKS, PULSE_MAX_TICKS);
     
-    // Clamp angle
-    if (angle < limits.min_position) angle = limits.min_position;
-    if (angle > limits.max_position) angle = limits.max_position;
-    
-    // Map Angle (-90 to +90 or 0 to 180) to PCA9685 Pulse (SERVOMIN to SERVOMAX)
-    // Assuming your UI sends -90 to +90. Adjust map inputs if UI sends 0-180.
-    // Standard servos expect pulses between ~1000us and ~2000us.
-    // The PCA9685 uses 0-4096 steps.
-    
-    // Let's assume input angle is -90 to 90 degrees
-    // We need to map this to the PCA9685 range
-    int pulselength = map(angle, -90, 90, SERVOMIN, SERVOMAX);
-    
-    // Write to the specific channel on PCA9685
-    // Channel matches joint ID (Joint 0 -> Channel 0)
+    // 3. Send to PCA9685
     pwm_.setPWM(joint, 0, pulselength);
 }
 
@@ -228,9 +234,7 @@ void ServoController::writeAllPositions(const float* angles) {
 
 void ServoController::disableAll() {
     for (int i = 0; i < NUM_JOINTS; i++) {
-        // To "disable" on PCA9685, we can set PWM to 0 (stops sending pulses)
-        // Note: Digital servos might hold position, Analog might go limp
-        pwm_.setPWM(i, 0, 0); 
+        pwm_.setPWM(i, 0, 0); // Setting PWM to 0 disables pulse
         enabled_[i] = false;
     }
 }
@@ -238,10 +242,10 @@ void ServoController::disableAll() {
 void ServoController::enableAll() {
     for (int i = 0; i < NUM_JOINTS; i++) {
         enabled_[i] = true;
-        // Logic to restore position would go here if tracked
     }
 }
 
+// --- EncoderReader (Unchanged) ---
 EncoderReader& EncoderReader::getInstance() {
     static EncoderReader instance;
     return instance;
@@ -251,7 +255,7 @@ EncoderReader::EncoderReader() {
     pin_a_[0] = 32; pin_b_[0] = 33;
     pin_a_[1] = 35; pin_b_[1] = 34;
     pin_a_[2] = 36; pin_b_[2] = 39;
-    pin_a_[3] = 21; pin_b_[3] = 22;
+    pin_a_[3] = 25; pin_b_[3] = 26;  // FIXED: Changed from 21/22 (I2C conflict) to 25/26
     pin_a_[4] = 16; pin_b_[4] = 17;
     pin_a_[5] = 18; pin_b_[5] = 19;
     
@@ -312,6 +316,7 @@ void EncoderReader::zero(uint8_t joint) {
     counts_[joint] = 0;
 }
 
+// --- Kinematics (Unchanged) ---
 Kinematics& Kinematics::getInstance() {
     static Kinematics instance;
     return instance;
@@ -373,6 +378,7 @@ bool Kinematics::inverseKinematics(const float* cartesian_pose, const float* see
     return true;
 }
 
+// --- SafetyManager (Unchanged) ---
 SafetyManager& SafetyManager::getInstance() {
     static SafetyManager instance;
     return instance;
@@ -436,6 +442,7 @@ void SafetyManager::emergencyStop() {
     ServoController::getInstance().disableAll();
 }
 
+// --- MotionPlanner (Unchanged) ---
 MotionPlanner& MotionPlanner::getInstance() {
     static MotionPlanner instance;
     return instance;
@@ -565,6 +572,7 @@ float MotionPlanner::getProgress() {
     return progress_;
 }
 
+// --- ControlLoop (Unchanged) ---
 ControlLoop& ControlLoop::getInstance() {
     static ControlLoop instance;
     return instance;
@@ -611,6 +619,7 @@ void ControlLoop::getCurrentVelocities(float* velocities) {
     xSemaphoreGive(mutex_);
 }
 
+// --- RobotStateManager (Unchanged) ---
 RobotStateManager& RobotStateManager::getInstance() {
     static RobotStateManager instance;
     return instance;

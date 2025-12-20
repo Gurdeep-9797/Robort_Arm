@@ -3,7 +3,7 @@
 #include <Adafruit_PWMServoDriver.h> // Add this include
 #include <Wire.h>
 #include <Arduino.h>
-#include <ESP32Servo.h>
+
 #include <Preferences.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -214,11 +214,6 @@ private:
     ServoController();
     Adafruit_PWMServoDriver pwm_; // Changed from Servo array to PWM driver
     bool enabled_[NUM_JOINTS];
-    
-    // Calibration for MG996R/Similar servos on PCA9685
-    // These correspond to pulse lengths (out of 4096)
-    const uint16_t SERVOMIN = 150; // This is the 'minimum' pulse length count (approx 0 deg)
-    const uint16_t SERVOMAX = 600; // This is the 'maximum' pulse length count (approx 180 deg)
 };
 
 #endif
