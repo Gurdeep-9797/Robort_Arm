@@ -168,10 +168,30 @@ ServoController::ServoController() {
     }
 }
 
-bool ServoController::begin() {
+// ... existing includes ...
+
+ServoController& ServoController::getInstance() {
+    static ServoController instance;
+    return instance;
+}
+
+ServoController::ServoController() : pwm_(Adafruit_PWMServoDriver(0x40)) { // 0x40 is default address
     for (int i = 0; i < NUM_JOINTS; i++) {
-        servos_[i].attach(pins_[i]);
-        servos_[i].write(90);
+        enabled_[i] = false;
+    }
+}
+
+bool ServoController::begin() {
+    Wire.begin(21, 22); // Initialize I2C on SDA=21, SCL=22
+    pwm_.begin();
+    pwm_.setOscillatorFrequency(27000000);
+    pwm_.setPWMFreq(50); // Analog servos run at ~50 Hz updates
+
+    delay(10);
+    
+    // Set initial positions
+    for (int i = 0; i < NUM_JOINTS; i++) {
+        writePosition(i, 0); // Initialize to 0 degrees
         enabled_[i] = true;
     }
     return true;
@@ -181,11 +201,23 @@ void ServoController::writePosition(uint8_t joint, float angle) {
     if (joint >= NUM_JOINTS || !enabled_[joint]) return;
     
     JointLimits limits = RobotConfig::getInstance().getJointLimits(joint);
+    
+    // Clamp angle
     if (angle < limits.min_position) angle = limits.min_position;
     if (angle > limits.max_position) angle = limits.max_position;
     
-    float mapped = map(angle * 10, limits.min_position * 10, limits.max_position * 10, 500, 2500);
-    servos_[joint].writeMicroseconds((int)mapped);
+    // Map Angle (-90 to +90 or 0 to 180) to PCA9685 Pulse (SERVOMIN to SERVOMAX)
+    // Assuming your UI sends -90 to +90. Adjust map inputs if UI sends 0-180.
+    // Standard servos expect pulses between ~1000us and ~2000us.
+    // The PCA9685 uses 0-4096 steps.
+    
+    // Let's assume input angle is -90 to 90 degrees
+    // We need to map this to the PCA9685 range
+    int pulselength = map(angle, -90, 90, SERVOMIN, SERVOMAX);
+    
+    // Write to the specific channel on PCA9685
+    // Channel matches joint ID (Joint 0 -> Channel 0)
+    pwm_.setPWM(joint, 0, pulselength);
 }
 
 void ServoController::writeAllPositions(const float* angles) {
@@ -196,15 +228,17 @@ void ServoController::writeAllPositions(const float* angles) {
 
 void ServoController::disableAll() {
     for (int i = 0; i < NUM_JOINTS; i++) {
-        servos_[i].detach();
+        // To "disable" on PCA9685, we can set PWM to 0 (stops sending pulses)
+        // Note: Digital servos might hold position, Analog might go limp
+        pwm_.setPWM(i, 0, 0); 
         enabled_[i] = false;
     }
 }
 
 void ServoController::enableAll() {
     for (int i = 0; i < NUM_JOINTS; i++) {
-        servos_[i].attach(pins_[i]);
         enabled_[i] = true;
+        // Logic to restore position would go here if tracked
     }
 }
 

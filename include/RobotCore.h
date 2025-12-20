@@ -1,6 +1,7 @@
 #ifndef ROBOT_CORE_H
 #define ROBOT_CORE_H
-
+#include <Adafruit_PWMServoDriver.h> // Add this include
+#include <Wire.h>
 #include <Arduino.h>
 #include <ESP32Servo.h>
 #include <Preferences.h>
@@ -87,22 +88,6 @@ private:
     Preferences prefs_;
 };
 
-class ServoController {
-public:
-    static ServoController& getInstance();
-    bool begin();
-    
-    void writePosition(uint8_t joint, float angle);
-    void writeAllPositions(const float* angles);
-    void disableAll();
-    void enableAll();
-
-private:
-    ServoController();
-    Servo servos_[NUM_JOINTS];
-    uint8_t pins_[NUM_JOINTS];
-    bool enabled_[NUM_JOINTS];
-};
 
 class EncoderReader {
 public:
@@ -212,6 +197,28 @@ private:
     RobotState cached_state_;
     SemaphoreHandle_t mutex_;
     static void updateTask(void* param);
+};
+// ... existing code ...
+
+class ServoController {
+public:
+    static ServoController& getInstance();
+    bool begin();
+    
+    void writePosition(uint8_t joint, float angle);
+    void writeAllPositions(const float* angles);
+    void disableAll();
+    void enableAll();
+
+private:
+    ServoController();
+    Adafruit_PWMServoDriver pwm_; // Changed from Servo array to PWM driver
+    bool enabled_[NUM_JOINTS];
+    
+    // Calibration for MG996R/Similar servos on PCA9685
+    // These correspond to pulse lengths (out of 4096)
+    const uint16_t SERVOMIN = 150; // This is the 'minimum' pulse length count (approx 0 deg)
+    const uint16_t SERVOMAX = 600; // This is the 'maximum' pulse length count (approx 180 deg)
 };
 
 #endif
