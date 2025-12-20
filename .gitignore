@@ -1,0 +1,41 @@
+# -------------------
+# PlatformIO Specific
+# -------------------
+# Contains build artifacts, binaries, and dependencies.
+# This folder is huge and should never be committed.
+.pio/
+.pioenvs/
+
+# -------------------
+# VS Code Settings
+# -------------------
+# Contains local paths and user-specific settings.
+# Generally recommended to ignore for C++ projects as 
+# 'c_cpp_properties.json' often contains absolute paths specific to your PC.
+.vscode/
+
+# -------------------
+# C++ / Compiled files
+# -------------------
+# In case you manually compile files outside of PlatformIO
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+
+# -------------------
+# OS System Files
+# -------------------
+# Mac
+.DS_Store
+# Windows
+Thumbs.db
+Desktop.ini
+
+# -------------------
+# Python (if used for scripts)
+# -------------------
+__pycache__/
+*.py[cod]

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Robot Arm Control</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 ESP32 Robot Arm Control</h1>
+            <div class="status-indicator" id="connection-status">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>System Status</h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="label">Mode:</span>
+                        <span class="value" id="mode">Unknown</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Homed:</span>
+                        <span class="value" id="homed">No</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Moving:</span>
+                        <span class="value" id="moving">No</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Faults:</span>
+                        <span class="value" id="faults">0x00000000</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Emergency Controls</h2>
+                <div class="button-group">
+                    <button class="btn btn-warning" onclick="stopMotion()">⏹ STOP ALL</button>
+                    <button class="btn btn-danger" onclick="emergencyStop()">🛑 E-STOP</button>
+                    <button class="btn btn-success" onclick="clearFault()">✓ Clear Fault</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Joint Control</h2>
+            <div id="joint-controls"></div>
+        </div>
+
+        <div class="card">
+            <h2>Cartesian Control (MODE 2 Only)</h2>
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="target-x">X (mm):</label>
+                    <input type="number" id="target-x" value="300" step="10">
+                </div>
+                <div class="input-group">
+                    <label for="target-y">Y (mm):</label>
+                    <input type="number" id="target-y" value="0" step="10">
+                </div>
+                <div class="input-group">
+                    <label for="target-z">Z (mm):</label>
+                    <input type="number" id="target-z" value="250" step="10">
+                </div>
+                <div class="input-group">
+                    <label for="cart-velocity">Velocity (mm/s):</label>
+                    <input type="number" id="cart-velocity" value="50" step="5">
+                </div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="moveCartesian(false)">➜ Move Linear</button>
+                <button class="btn btn-secondary" onclick="moveCartesian(true)">✈ Move on Plane</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Plane Definition</h2>
+            <div class="plane-controls">
+                <div class="input-grid">
+                    <div class="input-group">
+                        <label>Point 1:</label>
+                        <input type="text" id="p1" value="100,0,200" placeholder="x,y,z">
+                    </div>
+                    <div class="input-group">
+                        <label>Point 2:</label>
+                        <input type="text" id="p2" value="200,100,200" placeholder="x,y,z">
+                    </div>
+                    <div class="input-group">
+                        <label>Point 3:</label>
+                        <input type="text" id="p3" value="100,100,200" placeholder="x,y,z">
+                    </div>
+                    <div class="input-group">
+                        <label>Name:</label>
+                        <input type="text" id="plane-name" value="Workbench" placeholder="Plane name">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="definePlane()">Define Plane</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Mode Selection</h2>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="setMode(1)">Mode 1 (Open Loop)</button>
+                <button class="btn btn-secondary" onclick="setMode(2)">Mode 2 (Closed Loop)</button>
+            </div>
+            <p class="note">Note: MODE 2 requires encoders and homing</p>
+        </div>
+
+        <div class="card">
+            <h2>Cartesian Position</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">X:</span>
+                    <span class="value" id="cart-x">0.0 mm</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Y:</span>
+                    <span class="value" id="cart-y">0.0 mm</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Z:</span>
+                    <span class="value" id="cart-z">0.0 mm</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>ESP32 Robotic Arm | Firmware v1.0 | <span id="uptime">0s</span></p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
