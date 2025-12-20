@@ -841,14 +841,16 @@ h2 {
     font-size: 18px;
 }
 
-.joint-slider {
+input[type="range"].joint-slider {
     width: 100%;
     height: 8px;
     border-radius: 5px;
     background: #3c3c3c;
     outline: none;
     -webkit-appearance: none;
+    appearance: none;
 }
+
 
 
 .joint-slider::-webkit-slider-thumb {
