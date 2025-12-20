@@ -104,7 +104,6 @@ bool RobotConfig::setJointLimits(uint8_t joint, float min, float max) {
     xSemaphoreGive(mutex_);
     return true;
 }
-
 bool RobotConfig::setVelocityLimit(uint8_t joint, float max_vel) {
     if (joint >= NUM_JOINTS || max_vel <= 0) return false;
     xSemaphoreTake(mutex_, portMAX_DELAY);
