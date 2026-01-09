@@ -5,11 +5,15 @@
  * - Cannot switch during motion
  * - Requires firmware approval
  * - Visual confirmation of mode
+ * 
+ * FIX P0: Uses simulated WebSocket (not real hardware)
+ * FIX P0: Does not set modeChangePending since simulation is synchronous
  */
 
 import React from 'react';
 import useRobotStore from '../stores/robotStore';
-import useWebSocket from '../hooks/useWebSocket';
+// FIX P0: Use simulated WebSocket since we're in simulation-only mode
+import useSimulatedWebSocket from '../hooks/useSimulatedWebSocket';
 
 function SimulatorToggle() {
     const {
@@ -22,7 +26,7 @@ function SimulatorToggle() {
         estopActive,
     } = useRobotStore();
 
-    const { requestModeSwitch } = useWebSocket();
+    const { requestModeSwitch } = useSimulatedWebSocket();
 
     // Determine if switch is allowed
     const canSwitch = !isMoving && !modeChangePending && !estopActive;
@@ -30,9 +34,9 @@ function SimulatorToggle() {
     const handleToggle = () => {
         if (!canSwitch) return;
 
-        // Request switch to opposite mode
+        // FIX P0: Just call requestModeSwitch - it handles everything synchronously
+        // Don't call requestModeChange which sets pending=true
         requestModeSwitch(!simulatorMode);
-        useRobotStore.getState().requestModeChange(!simulatorMode);
     };
 
     // Determine blocking reason

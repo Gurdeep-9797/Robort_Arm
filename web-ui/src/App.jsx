@@ -20,6 +20,7 @@ import SimulatorToggle from './components/SimulatorToggle';
 // Lazy load heavy components
 const RobotSimulator = lazy(() => import('./components/RobotSimulator'));
 const ConnectionsGraph = lazy(() => import('./components/ConnectionsGraph'));
+const GeometryConfigPanel = lazy(() => import('./components/GeometryConfigPanel'));
 
 // ============================================================================
 // TAB DEFINITIONS
@@ -29,6 +30,7 @@ const TABS = [
     { id: 'simulator', label: '3D Simulator', icon: '🤖' },
     { id: 'connections', label: 'Connections', icon: '🔗' },
     { id: 'motion', label: 'Motion', icon: '🎯' },
+    { id: 'geometry', label: 'Geometry', icon: '📐' },
     { id: 'diagnostics', label: 'Diagnostics', icon: '📊' },
 ];
 
@@ -87,6 +89,7 @@ function App() {
                     {activeTab === 'simulator' && <RobotSimulator />}
                     {activeTab === 'connections' && <ConnectionsGraph />}
                     {activeTab === 'motion' && <MotionPanel />}
+                    {activeTab === 'geometry' && <GeometryConfigPanel />}
                     {activeTab === 'diagnostics' && <DiagnosticsPanel />}
                 </Suspense>
             </main>

@@ -20,7 +20,7 @@ const useRobotStore = create((set, get) => ({
     lastUpdateMs: 0,
 
     // ========== MODE STATE (Firmware Authoritative) ==========
-    simulatorMode: false,         // true = simulator, false = hardware
+    simulatorMode: true,          // FIX P0: Default to true (simulation-only mode)
     hardwareArmed: false,         // true = motors can move
     modeChangePending: false,
     modeChangeError: null,

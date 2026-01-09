@@ -72,15 +72,37 @@ const JOINT_LIMITS = [
 ];
 
 // ============================================================================
-// DH PARAMETERS
+// DH PARAMETERS (MUTABLE - User configurable)
 // ============================================================================
 
-const DH = {
+let DH = {
     L1: 150,  // Base to shoulder (mm)
     L2: 300,  // Shoulder to elbow (mm)
     L3: 250,  // Elbow to wrist (mm)
     L4: 100,  // Wrist to TCP (mm)
 };
+
+// FIX P2: Allow runtime geometry configuration
+function setDHParams(params) {
+    DH = { ...DH, ...params };
+    console.log('[SIMULATED] DH params updated:', DH);
+}
+
+function getDHParams() {
+    return { ...DH };
+}
+
+// Mutable joint limits
+let jointLimits = [...JOINT_LIMITS];
+
+function setJointLimits(limits) {
+    jointLimits = limits.map((l, i) => ({ ...JOINT_LIMITS[i], ...l }));
+    console.log('[SIMULATED] Joint limits updated:', jointLimits);
+}
+
+function getJointLimits() {
+    return jointLimits.map(l => ({ ...l }));
+}
 
 // ============================================================================
 // FORWARD KINEMATICS
@@ -426,4 +448,9 @@ export {
     getAlignmentStatus,
     getModeStatus,
     getSystemGraph,
+    // P2: Geometry configuration exports
+    setDHParams,
+    getDHParams,
+    setJointLimits,
+    getJointLimits,
 };

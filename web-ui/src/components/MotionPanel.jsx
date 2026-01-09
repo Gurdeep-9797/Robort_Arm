@@ -13,11 +13,13 @@ import useRobotStore from '../stores/robotStore';
 import useSimulatedWebSocket from '../hooks/useSimulatedWebSocket';
 
 function MotionPanel() {
-    const { jointPositions, isMoving, motionAllowed, estopActive } = useRobotStore();
+    // FIX P1: Use faultCode instead of just estopActive for Clear Fault button
+    const { jointPositions, isMoving, motionAllowed, estopActive, faultCode } = useRobotStore();
     const { jogJoint, sendMotionCommand } = useSimulatedWebSocket();
 
     const [selectedJoint, setSelectedJoint] = useState(0);
     const [speed, setSpeed] = useState(30);
+    // FIX P1: Use local state that doesn't get overwritten by store
     const [cartesianTarget, setCartesianTarget] = useState({ x: 300, y: 0, z: 250 });
 
     const handleJog = (direction) => {
@@ -45,6 +47,9 @@ function MotionPanel() {
     const handleClearFault = () => {
         sendMotionCommand({ type: 'clear_fault' });
     };
+
+    // FIX P1: Button disabled when NO fault exists (faultCode === 0)
+    const clearFaultDisabled = faultCode === 0;
 
     return (
         <div className="panel motion-panel">
@@ -93,7 +98,7 @@ function MotionPanel() {
                 />
             </div>
 
-            {/* Cartesian Target */}
+            {/* Cartesian Target - FIX P1: Uses local state only */}
             <div className="control-group">
                 <label>Cartesian Target (mm)</label>
                 <div className="input-row">
@@ -101,19 +106,19 @@ function MotionPanel() {
                         type="number"
                         placeholder="X"
                         value={cartesianTarget.x}
-                        onChange={(e) => setCartesianTarget({ ...cartesianTarget, x: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => setCartesianTarget(prev => ({ ...prev, x: parseFloat(e.target.value) || 0 }))}
                     />
                     <input
                         type="number"
                         placeholder="Y"
                         value={cartesianTarget.y}
-                        onChange={(e) => setCartesianTarget({ ...cartesianTarget, y: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => setCartesianTarget(prev => ({ ...prev, y: parseFloat(e.target.value) || 0 }))}
                     />
                     <input
                         type="number"
                         placeholder="Z"
                         value={cartesianTarget.z}
-                        onChange={(e) => setCartesianTarget({ ...cartesianTarget, z: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => setCartesianTarget(prev => ({ ...prev, z: parseFloat(e.target.value) || 0 }))}
                     />
                 </div>
                 <button
@@ -143,7 +148,7 @@ function MotionPanel() {
                 <button
                     className="secondary-btn"
                     onClick={handleClearFault}
-                    disabled={!estopActive}
+                    disabled={clearFaultDisabled}
                 >
                     ✓ Clear Fault
                 </button>
@@ -153,7 +158,8 @@ function MotionPanel() {
             <div className="motion-status">
                 {isMoving && <span className="status-moving">⚡ Motion in progress...</span>}
                 {estopActive && <span className="status-estop">🛑 E-STOP ACTIVE</span>}
-                {!motionAllowed && !estopActive && <span className="status-blocked">Motion blocked</span>}
+                {faultCode > 0 && !estopActive && <span className="status-fault">⚠️ Fault: 0x{faultCode.toString(16)}</span>}
+                {!motionAllowed && !estopActive && faultCode === 0 && <span className="status-blocked">Motion blocked</span>}
             </div>
         </div>
     );
