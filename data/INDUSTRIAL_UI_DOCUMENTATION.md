@@ -11,7 +11,7 @@ This UI transforms the ESP32 robot control interface into a professional industr
 - KUKA Sim
 - ABB RobotStudio
 - Fanuc ROBOGUIDE
-
+  
 ### Key Principle
 **Simulation runs on laptop/browser power. ESP32 remains execution authority.**
 
