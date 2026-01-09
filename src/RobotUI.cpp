@@ -119,6 +119,74 @@ void WebServer::setupRoutes() {
             this->handleDefinePlane(request, data, len, index, total);
         }
     );
+    
+    // ========== IK API Routes ==========
+    
+    server_->on("/api/ik/config", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleGetIKConfig(request);
+    });
+    
+    server_->on("/api/ik/configure", HTTP_POST,
+        [](AsyncWebServerRequest* request) {},
+        NULL,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            this->handleSetIKConfig(request, data, len, index, total);
+        }
+    );
+    
+    server_->on("/api/ik/preview", HTTP_POST,
+        [](AsyncWebServerRequest* request) {},
+        NULL,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            this->handleIKPreview(request, data, len, index, total);
+        }
+    );
+    
+    // ========== Motor API Routes ==========
+    
+    server_->on("/api/motors/config", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleGetMotorConfig(request);
+    });
+    
+    server_->on("/api/motors/configure", HTTP_POST,
+        [](AsyncWebServerRequest* request) {},
+        NULL,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            this->handleSetMotorConfig(request, data, len, index, total);
+        }
+    );
+    
+    // ========== Alignment & Diagnostics Routes ==========
+    
+    server_->on("/api/alignment/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleGetAlignmentStatus(request);
+    });
+    
+    server_->on("/api/diagnostics/history", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        this->handleGetDiagnosticsHistory(request);
+    });
+    
+    server_->on("/api/diagnostics/clear", HTTP_POST, [this](AsyncWebServerRequest* request) {
+        this->handleClearDiagnostics(request);
+    });
+    
+    // ========== Static files for new JS modules ==========
+    
+    server_->on("/ik_config.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(SPIFFS, "/ik_config.js", "application/javascript");
+    });
+    
+    server_->on("/motor_config.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(SPIFFS, "/motor_config.js", "application/javascript");
+    });
+    
+    server_->on("/diagnostics.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(SPIFFS, "/diagnostics.js", "application/javascript");
+    });
+    
+    server_->on("/robot_canvas.js", HTTP_GET, [](AsyncWebServerRequest* request) {
+        request->send(SPIFFS, "/robot_canvas.js", "application/javascript");
+    });
 }
 
 void WebServer::handleGetStatus(AsyncWebServerRequest* request) {

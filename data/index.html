@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
+
 <body class="simulator-layout">
     <div class="toolbar">
         <div class="toolbar-group">
@@ -140,14 +142,16 @@
         <aside class="right-panel">
             <div class="panel-tabs">
                 <button class="tab-btn active" onclick="switchTab('motion')">Motion</button>
+                <button class="tab-btn" onclick="switchTab('ik')">IK</button>
+                <button class="tab-btn" onclick="switchTab('motors')">Motors</button>
                 <button class="tab-btn" onclick="switchTab('mode')">Mode</button>
-                <button class="tab-btn" onclick="switchTab('config')">Config</button>
                 <button class="tab-btn" onclick="switchTab('safety')">Safety</button>
+                <button class="tab-btn" onclick="switchTab('diag')">Diag</button>
             </div>
 
             <div class="tab-content" id="tab-motion">
                 <h3>Motion Control</h3>
-                
+
                 <div class="control-group">
                     <label>Jog Joint</label>
                     <select id="jog-joint-select">
@@ -166,14 +170,14 @@
 
                 <div class="control-group">
                     <label>Speed: <span id="speed-value">30</span> deg/s</label>
-                    <input type="range" id="speed-slider" min="5" max="120" value="30" 
-                           oninput="updateSpeedValue(this.value)">
+                    <input type="range" id="speed-slider" min="5" max="120" value="30"
+                        oninput="updateSpeedValue(this.value)">
                 </div>
 
                 <div class="control-group">
                     <label>Acceleration: <span id="accel-value">100</span> deg/s²</label>
                     <input type="range" id="accel-slider" min="50" max="500" value="100" step="10"
-                           oninput="updateAccelValue(this.value)">
+                        oninput="updateAccelValue(this.value)">
                 </div>
 
                 <div class="control-group">
@@ -208,25 +212,14 @@
                 </div>
             </div>
 
-            <div class="tab-content" id="tab-config" style="display: none;">
-                <h3>Configuration</h3>
-                <div class="control-group">
-                    <label>Edit Joint Limits</label>
-                    <select id="config-joint-select">
-                        <option value="0">Joint 0</option>
-                        <option value="1">Joint 1</option>
-                        <option value="2">Joint 2</option>
-                        <option value="3">Joint 3</option>
-                        <option value="4">Joint 4</option>
-                        <option value="5">Joint 5</option>
-                    </select>
-                    <input type="number" id="limit-min" placeholder="Min (deg)" value="-180">
-                    <input type="number" id="limit-max" placeholder="Max (deg)" value="180">
-                    <button class="secondary-btn" onclick="updateLimits()">Update Limits</button>
-                </div>
-                <div class="control-group">
-                    <button class="primary-btn" onclick="saveConfigToESP32()">💾 Save to ESP32</button>
-                </div>
+            <div class="tab-content" id="tab-ik" style="display: none;">
+                <!-- IK Configuration - populated by ik_config.js -->
+                <div id="ik-config-container"></div>
+            </div>
+
+            <div class="tab-content" id="tab-motors" style="display: none;">
+                <!-- Motor Configuration - populated by motor_config.js -->
+                <div id="motor-config-container"></div>
             </div>
 
             <div class="tab-content" id="tab-safety" style="display: none;">
@@ -244,6 +237,10 @@
                         <span class="status-label">Faults:</span>
                         <span class="status-value" id="safety-faults">0x00000000</span>
                     </div>
+                    <div class="status-item">
+                        <span class="status-label">Alignment:</span>
+                        <span class="status-value" id="safety-alignment">OK</span>
+                    </div>
                 </div>
                 <div class="control-group">
                     <button class="danger-btn large" onclick="emergencyStop()">
@@ -253,6 +250,11 @@
                         ✓ Clear Fault
                     </button>
                 </div>
+            </div>
+
+            <div class="tab-content" id="tab-diag" style="display: none;">
+                <!-- Diagnostics - populated by diagnostics.js -->
+                <div id="diagnostics-container"></div>
             </div>
         </aside>
     </div>
@@ -281,150 +283,10 @@
     </div>
 
     <script src="app.js"></script>
-    <script src="simulator.js"></script>
+    <script src="robot_canvas.js"></script>
+    <script src="ik_config.js"></script>
+    <script src="motor_config.js"></script>
+    <script src="diagnostics.js"></script>
 </body>
-</html>
 
-        <div class="grid">
-            <div class="card">
-                <h2>System Status</h2>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="label">Mode:</span>
-                        <span class="value" id="mode">Unknown</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Homed:</span>
-                        <span class="value" id="homed">No</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Moving:</span>
-                        <span class="value" id="moving">No</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Faults:</span>
-                        <span class="value" id="faults">0x00000000</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>Emergency Controls</h2>
-                <div class="button-group">
-                    <button class="btn btn-warning" onclick="stopMotion()">⏹ STOP ALL</button>
-                    <button class="btn btn-danger" onclick="emergencyStop()">🛑 E-STOP</button>
-                    <button class="btn btn-success" onclick="clearFault()">✓ Clear Fault</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Joint Control</h2>
-            <div id="joint-controls"></div>
-        </div>
-
-        <div class="card">
-            <h2>Cartesian Control (MODE 2 Only)</h2>
-            <div class="input-grid">
-                <div class="input-group">
-                    <label for="target-x">X (mm):</label>
-                    <input type="number" id="target-x" value="300" step="10">
-                </div>
-                <div class="input-group">
-                    <label for="target-y">Y (mm):</label>
-                    <input type="number" id="target-y" value="0" step="10">
-                </div>
-                <div class="input-group">
-                    <label for="target-z">Z (mm):</label>
-                    <input type="number" id="target-z" value="250" step="10">
-                </div>
-                <div class="input-group">
-                    <label for="cart-velocity">Velocity (mm/s):</label>
-                    <input type="number" id="cart-velocity" value="50" step="5">
-                </div>
-            </div>
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="moveCartesian(false)">➜ Move Linear</button>
-                <button class="btn btn-secondary" onclick="moveCartesian(true)">✈ Move on Plane</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Plane Definition</h2>
-            <div class="plane-controls">
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label>Point 1:</label>
-                        <input type="text" id="p1" value="100,0,200" placeholder="x,y,z">
-                    </div>
-                    <div class="input-group">
-                        <label>Point 2:</label>
-                        <input type="text" id="p2" value="200,100,200" placeholder="x,y,z">
-                    </div>
-                    <div class="input-group">
-                        <label>Point 3:</label>
-                        <input type="text" id="p3" value="100,100,200" placeholder="x,y,z">
-                    </div>
-                    <div class="input-group">
-                        <label>Name:</label>
-                        <input type="text" id="plane-name" value="Workbench" placeholder="Plane name">
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="definePlane()">Define Plane</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Mode Selection</h2>
-            <div class="button-group">
-                <button class="btn btn-secondary" onclick="setMode(1)">Mode 1 (Open Loop)</button>
-                <button class="btn btn-secondary" onclick="setMode(2)">Mode 2 (Closed Loop)</button>
-            </div>
-            <p class="note">Note: MODE 2 requires encoders and homing</p>
-        </div>
-
-        <div class="card">
-            <h2>Session Management (MODE 2)</h2>
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="exportSession()">📊 Export Session Data</button>
-                <button class="btn btn-warning" onclick="resetSession()">🔄 Reset Session</button>
-            </div>
-            <p class="note">Export accuracy metrics and deviation data</p>
-        </div>
-
-        <div class="card">
-            <h2>3D Surface Streaming</h2>
-            <p class="note">Upload STL/point cloud in external tool, stream waypoints here</p>
-            <div class="button-group">
-                <button class="btn btn-secondary" onclick="alert('Use external CAD tool to generate waypoints')">
-                    📐 Stream Surface
-                </button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Cartesian Position</h2>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">X:</span>
-                    <span class="value" id="cart-x">0.0 mm</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Y:</span>
-                    <span class="value" id="cart-y">0.0 mm</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Z:</span>
-                    <span class="value" id="cart-z">0.0 mm</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <footer>
-        <p>ESP32 Robotic Arm | Firmware v1.0 | <span id="uptime">0s</span></p>
-    </footer>
-
-    <script src="app.js"></script>
-</body>
 </html>
