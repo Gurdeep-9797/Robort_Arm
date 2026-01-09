@@ -245,6 +245,71 @@ All IK solvers validate joint limits before returning a solution:
 
 ---
 
+## Simulator Mode (New!)
+
+The system now includes a full **Digital Twin Simulator** mode.
+
+### Mode Toggle
+
+In the header bar, you'll see a toggle switch:
+- **HARDWARE** (Orange) - Commands sent to real motors
+- **SIMULATOR** (Blue) - Commands run locally only
+
+### Switching Modes
+
+**To enter Simulator Mode:**
+1. Ensure robot is NOT moving
+2. Click the SIMULATOR button or toggle
+3. Motors will be disabled automatically
+
+**To enter Hardware Mode:**
+1. Ensure no E-Stop is active
+2. Clear any alignment faults
+3. Click HARDWARE button
+4. System will ARM the motors
+
+> ⚠️ **WARNING**: In HARDWARE mode, all motion commands will move the real robot!
+
+### Simulator Features
+
+When in Simulator Mode:
+- **3D Robot Visualization** - See robot in browser
+- **IK/FK Computation** - Runs in Web Worker for performance
+- **Joint Limits** - Still enforced
+- **Safety Logic** - Alignment checks still run
+- **No Motor Output** - PWM is disabled
+
+### Connections Graph
+
+Navigate to the **Connections** tab to see:
+- Live system architecture diagram
+- Node status (Active/Warning/Fault)
+- Data flow animation
+- Click any node for details
+
+### Safety Guarantees
+
+| Guarantee | Enforcement |
+|-----------|-------------|
+| Simulator cannot move motors | Firmware blocks PWM in sim mode |
+| Hardware mode requires safety check | E-Stop, faults, alignment checked |
+| Disconnect enters safe mode | 500ms grace, then auto-SIMULATOR |
+| UI cannot bypass firmware | All commands validated server-side |
+
+### Performance Notes
+
+The React-based simulator uses:
+- **Web Workers** for IK/FK (60fps rendering)
+- **WebSocket** for real-time updates (10Hz)
+- **Code-splitting** to reduce bundle size
+
+If performance is slow:
+1. Close other browser tabs
+2. Reduce window size
+3. Disable TCP path tracing
+
+---
+
 ## Common Issues and Solutions
 
 ### Problem: Cannot connect to web interface
@@ -311,6 +376,10 @@ All IK solvers validate joint limits before returning a solution:
 | `/api/ik/preview` | POST | Preview IK result |
 | `/api/motors/config` | GET | Get motor configuration |
 | `/api/alignment/status` | GET | Get alignment status |
+| `/api/mode/simulator` | POST | Switch Hardware/Simulator |
+| `/api/mode/status` | GET | Get current mode status |
+| `/api/system/graph` | GET | Get system graph node states |
+| `/ws` | WebSocket | Real-time state updates |
 
 ---
 

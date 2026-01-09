@@ -1,0 +1,27 @@
+{
+  "name": "esp32-robot-simulator",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "analyze": "vite-bundle-visualizer"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@reactflow/core": "^11.10.0",
+    "reactflow": "^11.10.0",
+    "@react-three/fiber": "^8.15.0",
+    "@react-three/drei": "^9.92.0",
+    "three": "^0.160.0",
+    "zustand": "^4.4.7",
+    "gl-matrix": "^3.4.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.10",
+    "vite-bundle-visualizer": "^1.0.0"
+  }
+}
