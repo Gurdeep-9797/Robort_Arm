@@ -9,7 +9,7 @@
  * 
  * EXECUTION MODEL:
  * [Browser Simulator] → Validates motion → [ESP32 Command] → [Physical Robot]
- *                     ↑ Telemetry feedback ↑
+ *                     ↑ Telemetry feedback ↑   
  */
 
 // ============================================================================

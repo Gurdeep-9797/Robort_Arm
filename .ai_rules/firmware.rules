@@ -1,0 +1,6 @@
+FIRMWARE CONSTRAINTS
+- Target ESP32 / STM32 class MCUs
+- Avoid dynamic memory allocation
+- Prefer deterministic control loops
+- Isolate motor control from communication logic
+- Assume limited power availability

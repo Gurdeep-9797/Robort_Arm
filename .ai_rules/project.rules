@@ -1,0 +1,7 @@
+PROJECT CONTEXT
+This repository is an industrial robotic arm project.
+
+The AI must treat these files as binding constraints when generating
+code, designs, or explanations.
+
+All rules apply unless explicitly overridden by user instruction.
